@@ -56,20 +56,35 @@ class CNN(chainer.Chain):
         h = chainer.functions.dropout(h, ratio=0.5)
         return self.fc2(h)
 
-def BC_preprocess(dataset):
+def BC_preprocess(train, test):
     images = ()
     labels = ()
-    print("Processing for BC learning...", len(dataset))
-    for i in range(len(dataset)):
-        image1, label1 = dataset[np.random.randint(0,len(dataset))]
-        image2, label2 = dataset[np.random.randint(0,len(dataset))]
+    print("Processing for BC learning...", len(train))
+    for i in range(len(train)):
+        image1, label1 = train[np.random.randint(0,len(train))]
+        image2, label2 = train[np.random.randint(0,len(train))]
+        label1 = np.eye(10)[label1].astype(np.float32)
+        label2 = np.eye(10)[label2].astype(np.float32)
         r = np.random.rand()
         images += (image1 * r + image2 * (1-r) ,)
         labels += (label1 * r + label2 * (1-r) ,)
-    return chainer.datasets.TupleDataset(images, labels)
+    images2 = ()
+    labels2 = ()
+    for i in range(len(test)):
+        image, label = test[i]
+        label = np.eye(10)[label].astype(np.float32)
+        images2 += (image, )
+        labels2 += (label, )
+    return chainer.datasets.TupleDataset(images, labels), chainer.datasets.TupleDataset(images2, labels2)
 
 def KL_loss(y,t):
-    return (- chainer.functions.sum(t[t.data!=0] * chainer.functions.log(t[t.data!=0])) + chainer.functions.sum(t * chainer.functions.log_softmax(y))) / y.shape[0]
+    ent = - chainer.functions.sum(t[t!=0.] * chainer.functions.log(t[t!=0.]))
+    cr_ent = - chainer.functions.sum(t * chainer.functions.log_softmax(y))
+    return (ent - cr_ent) / y.shape[0]
+
+def cos_sim(y,t):
+    y_ = chainer.Variable(np.eye(10).astype(np.float32))[chainer.functions.argmax(y, axis=1).data]
+    return y_ * t * chainer.functions.transpose(chainer.functions.tile(1.0 / chainer.functions.batch_l2_norm_squared(t),(10,1)))
 
 def main():
     parser = argparse.ArgumentParser(description='Chainer CIFAR example:')
@@ -84,10 +99,11 @@ def main():
     args = parser.parse_args()
 
     train, test = chainer.datasets.get_cifar10()
+    train,test = BC_preprocess(train, test)
 
-    train = BC_preprocess(train)
+    print(len(train), len(test))
 
-    model = chainer.links.Classifier(CNN(10), lossfun=KL_loss)
+    model = chainer.links.Classifier(CNN(10), lossfun=KL_loss, accfun=cos_sim)
     if args.gpu >= 0 and chainer.cuda.available:
         chainer.cuda.get_device_from_id(args.gpu).use()
         model.to_gpu()
@@ -110,7 +126,7 @@ def main():
                    trigger=(args.epoch, 'epoch'))
     trainer.extend(chainer.training.extensions.LogReport())
     trainer.extend(chainer.training.extensions.PrintReport(
-        ['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
+        ['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy' 'validation/main/accuracy', 'elapsed_time']))
     trainer.extend(chainer.training.extensions.ProgressBar())
 
     trainer.run()
