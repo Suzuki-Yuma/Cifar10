@@ -69,7 +69,7 @@ def BC_preprocess(dataset):
     return chainer.datasets.TupleDataset(images, labels)
 
 def KL_loss(y,t):
-    return (- chainer.functions.sum(t[t!=0] * chainer.functions.log(t[t!=0])) + chainer.functions.sum(t * chainer.functions.log_softmax(y))) / y.shape[0]
+    return (- chainer.functions.sum(t[t.data!=0] * chainer.functions.log(t[t.data!=0])) + chainer.functions.sum(t * chainer.functions.log_softmax(y))) / y.shape[0]
 
 def main():
     parser = argparse.ArgumentParser(description='Chainer CIFAR example:')
