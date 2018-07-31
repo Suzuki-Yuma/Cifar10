@@ -1,7 +1,10 @@
 import numpy as np
 import chainer
 import argparse
-
+xp = np
+if chainer.cuda.available:
+    import cupy
+    xp = cupy
 
 class ConvBn(chainer.Chain):
     def __init__(self, out_size, ksize, stride, pad):
@@ -83,15 +86,15 @@ def KL_loss(y,t):
     return (ent - cr_ent) / y.shape[0]
 
 def cos_sim(y,t):
-    y_ = chainer.Variable(np.eye(10).astype(np.float32))[chainer.cuda.to_cpu(chainer.functions.argmax(y, axis=1).data)]
+    y_ = chainer.Variable(xp.eye(10).astype(xp.float32))[chainer.cuda.to_cpu(chainer.functions.argmax(y, axis=1).data)]
     return y_ * t * chainer.functions.transpose(chainer.functions.tile(1.0 / chainer.functions.batch_l2_norm_squared(t),(10,1)))
 
 def main():
     parser = argparse.ArgumentParser(description='Chainer CIFAR example:')
     parser.add_argument('--batchsize', '-b', type=int, default=128,
                         help='Number of images in each mini-batch')
-    parser.add_argument('--epoch', '-e', type=int, default=100,
                         help='Number of sweeps over the dataset to train')
+    parser.add_argument('--epoch', '-e', type=int, default=100,
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--out', '-o', default='result',
@@ -104,6 +107,7 @@ def main():
     print(len(train), len(test))
 
     model = chainer.links.Classifier(CNN(10), lossfun=KL_loss, accfun=cos_sim)
+
     if args.gpu >= 0 and chainer.cuda.available:
         chainer.cuda.get_device_from_id(args.gpu).use()
         model.to_gpu()
