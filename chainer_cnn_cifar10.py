@@ -137,7 +137,7 @@ def main():
                    trigger=(args.epoch, 'epoch'))
     trainer.extend(chainer.training.extensions.LogReport())
     trainer.extend(chainer.training.extensions.PrintReport(
-        ['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy' 'validation/main/accuracy', 'elapsed_time']))
+        ['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
     trainer.extend(chainer.training.extensions.ProgressBar())
 
     trainer.run()
