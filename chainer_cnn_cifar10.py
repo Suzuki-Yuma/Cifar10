@@ -84,9 +84,9 @@ def BC_preprocess(train, test):
 
 
 def KL_loss(y, t):
-    ent = - chainer.functions.sum(t[t != 0.] *
+    ent = chainer.functions.sum(t[t != 0.] *
                                   chainer.functions.log(t[t != 0.]))
-    cr_ent = - chainer.functions.sum(t * chainer.functions.log_softmax(y))
+    cr_ent = chainer.functions.sum(t * chainer.functions.log_softmax(y))
     return (ent - cr_ent) / y.shape[0]
 
 
