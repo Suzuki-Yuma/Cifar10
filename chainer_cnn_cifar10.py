@@ -83,7 +83,7 @@ def KL_loss(y,t):
     return (ent - cr_ent) / y.shape[0]
 
 def cos_sim(y,t):
-    y_ = chainer.Variable(np.eye(10).astype(np.float32))[chainer.functions.argmax(y, axis=1).data]
+    y_ = np.eye(10).astype(np.float32)[chainer.functions.argmax(y, axis=1).data]
     return y_ * t * chainer.functions.transpose(chainer.functions.tile(1.0 / chainer.functions.batch_l2_norm_squared(t),(10,1)))
 
 def main():
