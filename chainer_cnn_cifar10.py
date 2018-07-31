@@ -6,6 +6,7 @@ if chainer.cuda.available:
     import cupy
     xp = cupy
 
+
 class ConvBn(chainer.Chain):
     def __init__(self, out_size, ksize, stride, pad):
         super(ConvBn, self).__init__()
@@ -59,18 +60,19 @@ class CNN(chainer.Chain):
         h = chainer.functions.dropout(h, ratio=0.5)
         return self.fc2(h)
 
+
 def BC_preprocess(train, test):
     images = ()
     labels = ()
     print("Processing for BC learning...", len(train))
     for i in range(len(train)):
-        image1, label1 = train[np.random.randint(0,len(train))]
-        image2, label2 = train[np.random.randint(0,len(train))]
+        image1, label1 = train[np.random.randint(0, len(train))]
+        image2, label2 = train[np.random.randint(0, len(train))]
         label1 = np.eye(10)[label1].astype(np.float32)
         label2 = np.eye(10)[label2].astype(np.float32)
         r = np.random.rand()
-        images += (image1 * r + image2 * (1-r) ,)
-        labels += (label1 * r + label2 * (1-r) ,)
+        images += (image1 * r + image2 * (1 - r),)
+        labels += (label1 * r + label2 * (1 - r),)
     images2 = ()
     labels2 = ()
     for i in range(len(test)):
@@ -80,21 +82,26 @@ def BC_preprocess(train, test):
         labels2 += (label, )
     return chainer.datasets.TupleDataset(images, labels), chainer.datasets.TupleDataset(images2, labels2)
 
-def KL_loss(y,t):
-    ent = - chainer.functions.sum(t[t!=0.] * chainer.functions.log(t[t!=0.]))
+
+def KL_loss(y, t):
+    ent = - chainer.functions.sum(t[t != 0.] *
+                                  chainer.functions.log(t[t != 0.]))
     cr_ent = - chainer.functions.sum(t * chainer.functions.log_softmax(y))
     return (ent - cr_ent) / y.shape[0]
 
-def cos_sim(y,t):
-    y_ = chainer.Variable(xp.eye(10).astype(xp.float32))[chainer.cuda.to_cpu(chainer.functions.argmax(y, axis=1).data)]
-    return y_ * t * chainer.functions.transpose(chainer.functions.tile(1.0 / chainer.functions.batch_l2_norm_squared(t),(10,1)))
+
+def cos_sim(y, t):
+    y_ = chainer.Variable(xp.eye(10).astype(xp.float32))[
+        chainer.cuda.to_cpu(chainer.functions.argmax(y, axis=1).data)]
+    return y_ * t * chainer.functions.transpose(chainer.functions.tile(1.0 / chainer.functions.batch_l2_norm_squared(t), (10, 1)))
+
 
 def main():
     parser = argparse.ArgumentParser(description='Chainer CIFAR example:')
     parser.add_argument('--batchsize', '-b', type=int, default=128,
                         help='Number of images in each mini-batch')
-                        help='Number of sweeps over the dataset to train')
     parser.add_argument('--epoch', '-e', type=int, default=100,
+                        help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--out', '-o', default='result',
@@ -102,7 +109,7 @@ def main():
     args = parser.parse_args()
 
     train, test = chainer.datasets.get_cifar10()
-    train,test = BC_preprocess(train, test)
+    train, test = BC_preprocess(train, test)
 
     print(len(train), len(test))
 
