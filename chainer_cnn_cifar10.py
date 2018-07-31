@@ -28,11 +28,12 @@ class CNN(chainer.Chain):
 
             self.block5 = ConvBn(256, 3, 1, 1)
             self.block6 = ConvBn(256, 3, 1, 1)
+            self.block7 = ConvBn(256, 3, 1, 1)
             self.pool3 = ConvBn(512, 3, 2, 0)
 
             self.fc1 = chainer.links.Linear(
                 None, 512, initialW=chainer.initializers.HeNormal(1e-3))
-            self.fc_bn = chainer.links.BatchNormalization(512)
+            self.fc_ln = chainer.links.LayerNormalization(512)
             self.fc2 = chainer.links.Linear(
                 None, 10, initialW=chainer.initializers.HeNormal(1e-3))
 
@@ -47,16 +48,17 @@ class CNN(chainer.Chain):
 
         h = self.block5(h)
         h = self.block6(h)
+        h = self.block7(h)
         h = chainer.functions.dropout(self.pool3(h), ratio=0.2)
 
-        h = chainer.functions.relu(self.fc_bn(self.fc1(h)))
+        h = chainer.functions.relu(self.fc_ln(self.fc1(h)))
         h = chainer.functions.dropout(h, ratio=0.5)
         return self.fc2(h)
 
 
 def main():
     parser = argparse.ArgumentParser(description='Chainer CIFAR example:')
-    parser.add_argument('--batchsize', '-b', type=int, default=64,
+    parser.add_argument('--batchsize', '-b', type=int, default=128,
                         help='Number of images in each mini-batch')
     parser.add_argument('--epoch', '-e', type=int, default=100,
                         help='Number of sweeps over the dataset to train')
