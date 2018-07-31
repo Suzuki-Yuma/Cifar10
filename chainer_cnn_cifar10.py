@@ -59,6 +59,7 @@ class CNN(chainer.Chain):
 def BC_preprocess(dataset):
     images = ()
     labels = ()
+    print("Processing for BC learning...", len(dataset))
     for i in range(len(dataset)):
         image1, label1 = dataset[np.random.randint(0,len(dataset))]
         image2, label2 = dataset[np.random.randint(0,len(dataset))]
@@ -68,7 +69,7 @@ def BC_preprocess(dataset):
     return chainer.datasets.TupleDataset(images, labels)
 
 def KL_loss(y,t):
-    return (- chainer.functions.sum(t[t.data.nonzero()] * chainer.functions.log(t[t.data.nonzero()])) + chainer.functions.sum(t * chainer.functions.log_softmax(y))) / y.shape[0]
+    return (- chainer.functions.sum(t[t!=0] * chainer.functions.log(t[t!=0])) + chainer.functions.sum(t * chainer.functions.log_softmax(y))) / y.shape[0]
 
 def main():
     parser = argparse.ArgumentParser(description='Chainer CIFAR example:')
