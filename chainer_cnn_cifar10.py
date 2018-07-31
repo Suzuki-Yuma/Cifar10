@@ -93,8 +93,8 @@ def KL_loss(y, t):
 def cos_sim(y, t):
     y_ = chainer.Variable(xp.eye(10).astype(xp.float32))[
         chainer.cuda.to_cpu(chainer.functions.argmax(y, axis=1).data)]
-    print(y_ * t * chainer.functions.transpose(chainer.functions.tile(1.0 / chainer.functions.batch_l2_norm_squared(t), (10, 1))).shape)
-    return y_ * t * chainer.functions.transpose(chainer.functions.tile(1.0 / chainer.functions.batch_l2_norm_squared(t), (10, 1)))
+    print((chainer.functions.sum(y_ * t, axis=1) / chainer.functions.batch_l2_norm_squared(t)).shape)
+    return chainer.functions.sum(y_ * t, axis=1) / chainer.functions.batch_l2_norm_squared(t)
 
 
 def main():
