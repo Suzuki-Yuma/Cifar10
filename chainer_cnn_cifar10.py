@@ -1,3 +1,4 @@
+import numpy as np
 import chainer
 import argparse
 
@@ -55,6 +56,19 @@ class CNN(chainer.Chain):
         h = chainer.functions.dropout(h, ratio=0.5)
         return self.fc2(h)
 
+def BC_preprocess(dataset):
+    images = ()
+    labels = ()
+    for i in range(len(dataset)):
+        image1, label1 = dataset[np.random.randint(0,len(dataset))]
+        image2, label2 = dataset[np.random.randint(0,len(dataset))]
+        r = np.random.rand()
+        images += (image1 * r + image2 * (1-r) ,)
+        labels += (label1 * r + label2 * (1-r) ,)
+    return chainer.datasets.TupleDataset(images, labels)
+
+def KL_loss(y,t):
+    return (- chainer.functions.sum(t[t.data.nonzero()] * chainer.functions.log(t[t.data.nonzero()])) + chainer.functions.sum(t * chainer.functions.log_softmax(y))) / y.shape[0]
 
 def main():
     parser = argparse.ArgumentParser(description='Chainer CIFAR example:')
@@ -70,7 +84,9 @@ def main():
 
     train, test = chainer.datasets.get_cifar10()
 
-    model = chainer.links.Classifier(CNN(10))
+    train = BC_preprocess(train)
+
+    model = chainer.links.Classifier(CNN(10), lossfun=KL_loss)
     if args.gpu >= 0 and chainer.cuda.available:
         chainer.cuda.get_device_from_id(args.gpu).use()
         model.to_gpu()
